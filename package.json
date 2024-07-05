@@ -1,0 +1,24 @@
+{
+  "name": "fils",
+  "version": "1.0.0",
+  "description": "F*ck It, Link Shortener.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "ts-node src/index.ts"
+  },
+  "keywords": [
+    "link-shortener"
+  ],
+  "author": "NorthWestWind",
+  "license": "GPL-3.0-or-later",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "tidy-url": "^1.18.3"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.3"
+  }
+}
