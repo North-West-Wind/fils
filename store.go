@@ -82,6 +82,22 @@ func LookupID(id uint64) (string, error) {
 func AddURL(url string) (uint64, error) {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
+	if _, exists := sparseIndex[xxhash.Sum64String(url)]; exists {
+		// URL may already exist. Scan file for it
+		_, err := file.Seek(0, io.SeekStart)
+		if err != nil {
+			return 0, err
+		}
+
+		var lineNum uint64
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			lineNum++
+			if scanner.Text() == url {
+				return lineNum, nil
+			}
+		}
+	}
 	// Seek not needed as we have O_APPEND
 	_, err := file.WriteString(url + "\n")
 	if err != nil {
