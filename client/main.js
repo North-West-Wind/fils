@@ -10,12 +10,12 @@ button.onclick = async () => {
 	const link = document.querySelector("input#link").value;
 	const pass = document.querySelector("input#pass").value;
 
-	const res = await fetch("/api/new", {
+	const res = await fetch("/new", {
 		method: "POST",
-		body: JSON.stringify({ link }),
+		body: link,
 		headers: {
-			"Content-Type": "application/json",
-			"Authorization": "Bearer " + pass
+			"Content-Type": "text/plain",
+			"Authorization": pass
 		}
 	});
 	resultDiv.style.display = "";
