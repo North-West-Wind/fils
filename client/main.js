@@ -21,7 +21,9 @@ button.onclick = async () => {
 	resultDiv.style.display = "";
 	if (res.ok) {
 		resultDiv.classList.add("ok");
-		resultDiv.innerHTML = `${window.location.href}s/${await res.text()}`;
+		const url = new URL(window.location.host);
+		url.pathname = "/" + await res.text();
+		resultDiv.innerHTML = url.href;
 	} else {
 		resultDiv.classList.add("err");
 		resultDiv.innerHTML = `Error: ${await res.text()}`;
