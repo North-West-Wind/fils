@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	sparseIndex map[uint64]struct{} // Used for deduplication when adding new link
+	sparseIndex map[uint16]struct{} // Used for deduplication when adding new link
 	file        *os.File            // Append-only file
 	fileMutex   sync.Mutex
 	urls        uint64
@@ -21,7 +21,7 @@ var (
 
 func LoadStore(storePath string) (err error) {
 	// Init variables
-	sparseIndex = make(map[uint64]struct{})
+	sparseIndex = make(map[uint16]struct{})
 	cache = NewCache(1000)
 
 	fileMutex.Lock()
@@ -41,7 +41,7 @@ func LoadStore(storePath string) (err error) {
 			ErrLog.Printf("Failed to normalize %s: %v", line, err)
 			continue
 		}
-		sparseIndex[xxhash.Sum64String(url)] = struct{}{}
+		sparseIndex[uint16(xxhash.Sum64String(url)&0xFFFF)] = struct{}{}
 	}
 	log.Printf("Processed %d lines from store", urls)
 	return nil
@@ -82,8 +82,9 @@ func LookupID(id uint64) (string, error) {
 func AddURL(url string) (uint64, error) {
 	fileMutex.Lock()
 	defer fileMutex.Unlock()
-	if _, exists := sparseIndex[xxhash.Sum64String(url)]; exists {
+	if _, exists := sparseIndex[uint16(xxhash.Sum64String(url)&0xFFFF)]; exists {
 		// URL may already exist. Scan file for it
+		log.Printf("Sparse index hit for URL %s", url)
 		_, err := file.Seek(0, io.SeekStart)
 		if err != nil {
 			return 0, err
@@ -94,9 +95,11 @@ func AddURL(url string) (uint64, error) {
 		for scanner.Scan() {
 			lineNum++
 			if scanner.Text() == url {
+				log.Printf("Found URL %s as ID %d", url, lineNum)
 				return lineNum, nil
 			}
 		}
+		log.Printf("URL %s not found in store", url)
 	}
 	// Seek not needed as we have O_APPEND
 	_, err := file.WriteString(url + "\n")
@@ -104,5 +107,6 @@ func AddURL(url string) (uint64, error) {
 		return 0, err
 	}
 	urls++
+	log.Printf("Added URL %s as ID %d", url, urls)
 	return urls, nil
 }
