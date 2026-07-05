@@ -1,7 +1,9 @@
 package main
 
 import (
+	"embed"
 	"io"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -15,8 +17,21 @@ import (
 )
 
 var (
-	ErrLog = log.New(os.Stderr, "", 0)
+	ErrLog      = log.New(os.Stderr, "", 0)
+	clientFiles fs.FS
+	//go:embed minified
+	bundleFiles embed.FS
 )
+
+func init() {
+	if os.Getenv("APP_ENV") == "dev" {
+		log.Println("Detected development environment. Using client/ directory...")
+		clientFiles = os.DirFS("client")
+	} else {
+		log.Println("Detected production environment. Using embedded directory...")
+		clientFiles, _ = fs.Sub(bundleFiles, "minified")
+	}
+}
 
 func main() {
 	if _, err := os.Stat(".env"); err == nil {
@@ -45,12 +60,17 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
+	r.Use(middleware.Compress(5))
 
-	r.Get("/s/{id}", func(w http.ResponseWriter, r *http.Request) {
+	fsHandler := http.FileServer(http.FS(clientFiles))
+
+	r.Handle("/", fsHandler)
+
+	r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
 		id, err := strconv.ParseUint(chi.URLParam(r, "id"), 10, 64)
 		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("Failed to parse ID"))
+			// Fallback to file serving
+			fsHandler.ServeHTTP(w, r)
 			return
 		}
 		url, err := LookupID(id)
@@ -105,8 +125,6 @@ func main() {
 		w.Write([]byte(strconv.FormatUint(id, 10)))
 		log.Printf("Added URL %s as ID %d", url, id)
 	})
-
-	r.Handle("/*", http.FileServer(http.Dir("./client")))
 
 	port := os.Getenv("PORT")
 	if port == "" {
