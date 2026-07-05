@@ -11,7 +11,16 @@ npx esbuild client/main.js --bundle --minify --outfile="$MINIFIED_DIR/main.js" |
 npx esbuild client/style.css --minify --outfile="$MINIFIED_DIR/style.css" || cp client/style.css $MINIFIED_DIR/style.css
 
 # Minify HTML
-npx html-minifier-terser client/index.html -o $MINIFIED_DIR/index.html || cp client/index.html $MINIFIED_DIR/index.html
+npx html-minifier-terser client/index.html -o $MINIFIED_DIR/index.html \
+	--collapse-whitespace \
+	--remove-attribute-quotes \
+	--remove-comments \
+	--remove-empty-attributes \
+	--remove-empty-elements \
+	--remove-optional-tags \
+	--remove-redundant-attributes \
+	--remove-style-link-type-attributes \
+	--remove-tag-whitespace || cp client/index.html $MINIFIED_DIR/index.html
 
 # Minify SVG
 npx svgo client/icon.svg -o $MINIFIED_DIR/icon.svg --multipass || cp client/icon.svg $MINIFIED_DIR/icon.svg
